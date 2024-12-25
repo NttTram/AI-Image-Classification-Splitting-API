@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi import FastAPI, File, UploadFile ## upload file
-from .routers import router
+from .router import router
 
 
 ## Setup FastAPI instance
