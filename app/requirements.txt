@@ -6,5 +6,5 @@ uvicorn==0.34.0
 typing-extensions>=4.0.0  # Adjust based on actual compatibility requirements
 python-multipart 
 #python 3.9.0
-
+opencv-python-headless
 ## Use pip install -r requirements.txt to test the requirements installation
