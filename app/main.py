@@ -1,6 +1,5 @@
 from fastapi import FastAPI
-from .router import router
-
+from router import router
 
 ## Setup FastAPI instance
 app = FastAPI()
