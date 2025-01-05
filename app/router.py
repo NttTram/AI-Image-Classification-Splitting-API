@@ -26,23 +26,21 @@ async def create_upload_file(file: UploadFile = File(...)):
 
 def draw_detections(image, boxes, classes, scores, class_names):
     for i, box in enumerate(boxes):
-        if scores[i] >= 0.5:
-            box = boxes[i]            
+        if scores[i] >= 0.2:
+                 
             class_id = int(classes[i])  # Convert class ID to integer
-            if class_id not in class_names:
-                print(f"Unknown class ID encountered: {class_id}")
-            label = class_names.get(class_id, f'ClassID {class_id}')
-            
+            label = class_names.get(class_id, f"Unlabeled (ID {class_id})")  # Default to Unlabeled
           
             # Ensure boxes are scaled back to the original image size
-            y_min, x_min, y_max, x_max = box
+            y_min, x_min, y_max, x_max = boxes[i]
             x_min = int(x_min * image.shape[1])
             x_max = int(x_max * image.shape[1])
+            
             y_min = int(y_min * image.shape[0])
             y_max = int(y_max * image.shape[0])
 
             cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 0), 2)
-            cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            cv2.putText(image, label, (x_min, y_min - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
     return image
 
 @router.post("/detect/")
@@ -88,58 +86,99 @@ async def detect_image(file: UploadFile = File(...)):
     detection_classes = outputs['detection_classes'].numpy()[0].astype(int)  # [1, num_detections]
     detection_scores = outputs['detection_scores'].numpy()[0]  # [1, num_detections]
     
-    # Assuming you have a list or di"ct mapping class indices to labels
     class_names = {
-    1: "Person",
-    2: "Bicycle",
-    3: "Car",
-    4: "Motorcycle",
-    5: "Airplane",
-    6: "Bus",
-    7: "Train",
-    8: "Truck",
-    9: "Boat",
-    10: "Traffic light",
-    11: "Fire hydrant",
-    13: "Stop sign",
-    14: "Parking meter",
-    15: "Bench",
-    16: "Bird",
-    17: "Cat",
-    18: "Dog",
-    19: "Horse",
-    20: "Sheep",
-    21: "Cow",
-    22: "Elephant",
-    23: "Bear",
-    24: "Zebra",
-    25: "Giraffe",
-    27: "Backpack",
-    28: "Umbrella",
-    31: "Handbag",
-    32: "Tie",
-    33: "Suitcase",
-    34: "Frisbee",
-    35: "Skis",
-    36: "Snowboard",
-    37: "Sports ball",
-    38: "Kite",
-    39: "Baseball bat",
-    40: "Baseball glove",
-    41: "Skateboard",
-    42: "Surfboard",
-    43: "Tennis racket",
-    44: "Bottle",
-    46: "Wine glass",
-    47: "Cup",
-    48: "Fork",
-    49: "Knife",
-    50: "Spoon",
-    51: "Orange",
-    52: "Banana",
-    53: "Apple",
-    # Fill other missing IDs with 'Unknown' if needed
-}
+        1: "Person",
+        2: "Bicycle",
+        3: "Car",
+        4: "Motorcycle",
+        5: "Airplane",
+        6: "Bus",
+        7: "Train",
+        8: "Truck",
+        9: "Boat",
+        10: "Traffic Light",
+        11: "Fire Hydrant",
+        12: "Unknown",  # not used
+        13: "Stop Sign",
+        14: "Parking Meter",
+        15: "Bench",
+        16: "Bird",
+        17: "Cat",
+        18: "Dog",
+        19: "Horse",
+        20: "Sheep",
+        21: "Cow",
+        22: "Elephant",
+        23: "Bear",
+        24: "Zebra",
+        25: "Giraffe",
+        26: "Unknown",  # not used
+        27: "Backpack",
+        28: "Umbrella",
+        29: "Unknown",  # not used
+        30: "Unknown",  # not used
+        31: "Handbag",
+        32: "Tie",
+        33: "Suitcase",
+        34: "Frisbee",
+        35: "Skis",
+        36: "Snowboard",
+        37: "Sports Ball",
+        38: "Kite",
+        39: "Baseball Bat",
+        40: "Baseball Glove",
+        41: "Skateboard",
+        42: "Surfboard",
+        43: "Tennis Racket",
+        44: "Bottle",
+        45: "Unknown",  # not used
+        46: "Wine Glass",
+        47: "Cup",
+        48: "Fork",
+        49: "Knife",
+        50: "Spoon",
+        51: "Bowl",
+        52: "Banana",
+        53: "Apple",
+        54: "Sandwich",
+        55: "Orange",
+        56: "Broccoli",
+        57: "Carrot",
+        58: "Hot Dog",
+        59: "Pizza",
+        60: "Donut",
+        61: "Cake",
+        62: "Chair",
+        63: "Couch",
+        64: "Potted Plant",
+        65: "Bed",
+        66: "Unknown",  # not used
+        67: "Dining Table",
+        68: "Unknown",  # not used
+        69: "Unknown",  # not used
+        70: "Toilet",
+        71: "Unknown",  # not used
+        72: "TV",
+        73: "Laptop",
+        74: "Mouse",
+        75: "Remote",
+        76: "Keyboard",
+        77: "Cell Phone",
+        78: "Microwave",
+        79: "Oven",
+        80: "Toaster",
+        81: "Sink",
+        82: "Refrigerator",
+        83: "Unknown",  # not used
+        84: "Book",
+        85: "Clock",
+        86: "Vase",
+        87: "Scissors",
+        88: "Teddy Bear",
+        89: "Hair Drier",
+        90: "Toothbrush"
+    }
+  
 
     
     processed_image = draw_detections(
