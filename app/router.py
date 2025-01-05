@@ -146,7 +146,7 @@ class_names = {
 #         order = order[np.where(iou <= threshold)[0]]
         
 #     return keep
-def non_max_suppression(boxes, scores, threshold=0.5):
+def non_max_suppression(boxes, scores, threshold=0.3):
     if len(boxes) == 0:
         return []
     boxes = np.array(boxes)
@@ -155,14 +155,14 @@ def non_max_suppression(boxes, scores, threshold=0.5):
     return indices.flatten()
 
 
-def draw_detections(image, boxes, classes, scores, class_names, threshold=0.5):
+def draw_detections(image, boxes, classes, scores, class_names, threshold=0.4):
     for i, score in enumerate(scores):
         if score >= threshold:  # Ensure we are only drawing detections that meet the confidence threshold
             x_min, y_min, x_max, y_max = boxes[i]
             class_id = classes[i]
             label = class_names.get(class_id, f'Unlabeled (ID {class_id})')
             cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 0), 2)
-            cv2.putText(image, label, (x_min, y_min - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+            cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
     return image
 
 
@@ -215,9 +215,6 @@ async def detect_image(file: UploadFile = File(...)):
     # Draw detections
     processed_image = draw_detections(image, filtered_boxes, filtered_classes, filtered_scores, class_names)
     
-    processed_image = draw_detections(
-        image, detection_boxes, detection_classes, detection_scores, class_names
-    )
     
     # Convert the image to JPEG format before sending the response
     _, encoded_image = cv2.imencode('.jpg', processed_image)
