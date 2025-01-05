@@ -44,20 +44,6 @@ def draw_detections(image, boxes, classes, scores, class_names):
     return image
 
 @router.post("/detect/")
-# async def detect_image(file: UploadFile = File(...)):
-#     # Check file type
-#     if not file.filename.endswith(('.png', '.jpg', '.jpeg')):
-#         return JSONResponse(status_code=400, content={"message" : "Invalid file format"})
-    
-#     # Save file to a secure location
-#     file_location = f"/app/data/img/{str(uuid.uuid4())}-{file.filename}"
-#     with open(file_location, "wb+") as file_object:
-#         file_object.write(await file.read())
-        
-#     # Perform image detection, recognition, and segmentation
-#     results = process_image(file_location) # Placeholder for the actual processing function
-    
-#     return results
 
 async def detect_image(file: UploadFile = File(...)):
     contents = await file.read()
@@ -189,8 +175,7 @@ async def detect_image(file: UploadFile = File(...)):
     _, encoded_image = cv2.imencode('.jpg', processed_image)
 
     return Response(content=encoded_image.tobytes(), media_type='image/jpeg')
-    # return process_output(detection_boxes, detection_classes, detection_scores, image.shape)
-
+   
 def process_output(boxes, classes, scores, image_shape):
     H, W = image_shape[0], image_shape[1]
     results = []
@@ -206,38 +191,4 @@ def process_output(boxes, classes, scores, image_shape):
             })
 
     return {"detections": results}
-    # # The output detectionary includes all the detected classes and their locations
-    # num_detections = int(outputs.pop('num_detections'))
-    # detection_classes = outputs['detection_classes'][0].numpy()[:num_detections]
-    # detection_boxes = outputs['detection_boxes'][0].numpy()[:num_detections]
-    
-    
-    # # Print results
-    # print("Detected classes: ", detection_classes)
-    # print("Detection boxes: ", detection_boxes)
-
-    # for i in range(num_detections):
-    #     box = detection_boxes[i]
-    #     cv2.rectangle(image, (int(box[1]*image.shape[1]), int(box[0]*image.shape[0])),
-    #                   (int(box[3]*image.shape[1]), int(box[2]*image.shape[0])),
-    #                   (255, 0, 0), 2) # Blue colour for the box
-        
-        
-    # # Display the image
-    # cv2.imshow('Object detection', image)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    
-
-    
-    # Process outputs
-    
-    # return {"message" : "Image processed successfully"}
-
-def process_image(image_path):
-    # Implement image processing logic here
-    # For example, use a pre-trained model to detect objects, classify objects, and segment the image
-    # Return the detected objects, classifications, and segmentation results
-    return {"status": "success", "data" : "Processed image details would be here"}
-
-
+  
