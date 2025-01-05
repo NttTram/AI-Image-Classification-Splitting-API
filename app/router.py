@@ -109,53 +109,17 @@ class_names = {
     90: "Toothbrush"
 }
 
-# def non_max_suppression(boxes, scores, threshold):
-#     if len(boxes) == 0:
-#         return []
-    
-#     # Convert to float
-#     boxes = np.array(boxes, dtype=float)
 
-#     # Coordinates of bounding boxes
-#     start_x = boxes[:, 0]
-#     start_y = boxes[:, 1]
-#     end_x = boxes[:, 2]
-#     end_y = boxes[:, 3]
-
-#     # Compute the area of the bounding boxes and sort by the bottom-right y-coordinate of the bounding box
-#     areas = (end_x - start_x + 1) * (end_y - start_y + 1)
-#     order = np.argsort(scores)
-
-#     keep = []
-#     while order.size > 0:
-#         i = order[-1]
-#         keep.append(i)
-#         overlap_x1 = np.maximum(start_x[i], start_x[order[:-1]])
-#         overlap_y1 = np.maximum(start_y[i], start_y[order[:-1]])
-#         overlap_x2 = np.minimum(end_x[i], end_x[order[:-1]])
-#         overlap_y2 = np.minimum(end_y[i], end_y[order[:-1]])
-
-#         overlap_w = np.maximum(0, overlap_x2 - overlap_x1 + 1) 
-#         overlap_h = np.maximum(0, overlap_y2 - overlap_y1 + 1) 
-
-#         overlap_area = overlap_w * overlap_h
-        
-#         iou = overlap_area / (areas[i] + areas[order[:-1]] - overlap_area)
-
-#         # Indices of boxes that do not overlap much with the current box
-#         order = order[np.where(iou <= threshold)[0]]
-        
-#     return keep
-def non_max_suppression(boxes, scores, threshold=0.3):
+def non_max_suppression(boxes, scores, threshold=0.35):
     if len(boxes) == 0:
         return []
     boxes = np.array(boxes)
     scores = np.array(scores)
-    indices = cv2.dnn.NMSBoxes(boxes.tolist(), scores.tolist(), score_threshold=0.2, nms_threshold=threshold)
+    indices = cv2.dnn.NMSBoxes(boxes.tolist(), scores.tolist(), score_threshold=0.3, nms_threshold=threshold)
     return indices.flatten()
 
 
-def draw_detections(image, boxes, classes, scores, class_names, threshold=0.4):
+def draw_detections(image, boxes, classes, scores, class_names, threshold=0.35):
     for i, score in enumerate(scores):
         if score >= threshold:  # Ensure we are only drawing detections that meet the confidence threshold
             x_min, y_min, x_max, y_max = boxes[i]
@@ -195,8 +159,6 @@ async def detect_image(file: UploadFile = File(...)):
     detection_classes = outputs['detection_classes'].numpy()[0].astype(int)  # [1, num_detections]
     detection_scores = outputs['detection_scores'].numpy()[0]  # [1, num_detections]
     
-
-
     
     # Convert detection boxes from relative coordinates to absolute coordinates
     boxes = []
