@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Response
 import uuid
 from fastapi.responses import JSONResponse
 import os
@@ -12,7 +12,6 @@ router = APIRouter()
 model_dir = '/app/data/modelset/ssd_mobilenet_v2_320x320_coco17_tpu-8/saved_model'
 print("Loading model from:", model_dir)
 print("Is path correct?", os.path.exists(model_dir))
-model = tf.saved_model.load(model_dir)
 
 model = tf.saved_model.load(model_dir)
 
@@ -24,6 +23,27 @@ async def create_upload_file(file: UploadFile = File(...)):
     return {"filename" : file.filename}
 
 
+
+def draw_detections(image, boxes, classes, scores, class_names):
+    for i, box in enumerate(boxes):
+        if scores[i] >= 0.5:
+            box = boxes[i]            
+            class_id = int(classes[i])  # Convert class ID to integer
+            if class_id not in class_names:
+                print(f"Unknown class ID encountered: {class_id}")
+            label = class_names.get(class_id, f'ClassID {class_id}')
+            
+          
+            # Ensure boxes are scaled back to the original image size
+            y_min, x_min, y_max, x_max = box
+            x_min = int(x_min * image.shape[1])
+            x_max = int(x_max * image.shape[1])
+            y_min = int(y_min * image.shape[0])
+            y_max = int(y_max * image.shape[0])
+
+            cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 0), 2)
+            cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+    return image
 
 @router.post("/detect/")
 # async def detect_image(file: UploadFile = File(...)):
@@ -65,10 +85,72 @@ async def detect_image(file: UploadFile = File(...)):
     
     # Extracting outputs
     detection_boxes = outputs['detection_boxes'].numpy()[0]   # [1, num_detections, 4]
-    detection_classes = outputs['detection_classes'].numpy()[0]  # [1, num_detections]
+    detection_classes = outputs['detection_classes'].numpy()[0].astype(int)  # [1, num_detections]
     detection_scores = outputs['detection_scores'].numpy()[0]  # [1, num_detections]
+    
+    # Assuming you have a list or di"ct mapping class indices to labels
+    class_names = {
+    1: "Person",
+    2: "Bicycle",
+    3: "Car",
+    4: "Motorcycle",
+    5: "Airplane",
+    6: "Bus",
+    7: "Train",
+    8: "Truck",
+    9: "Boat",
+    10: "Traffic light",
+    11: "Fire hydrant",
+    13: "Stop sign",
+    14: "Parking meter",
+    15: "Bench",
+    16: "Bird",
+    17: "Cat",
+    18: "Dog",
+    19: "Horse",
+    20: "Sheep",
+    21: "Cow",
+    22: "Elephant",
+    23: "Bear",
+    24: "Zebra",
+    25: "Giraffe",
+    27: "Backpack",
+    28: "Umbrella",
+    31: "Handbag",
+    32: "Tie",
+    33: "Suitcase",
+    34: "Frisbee",
+    35: "Skis",
+    36: "Snowboard",
+    37: "Sports ball",
+    38: "Kite",
+    39: "Baseball bat",
+    40: "Baseball glove",
+    41: "Skateboard",
+    42: "Surfboard",
+    43: "Tennis racket",
+    44: "Bottle",
+    46: "Wine glass",
+    47: "Cup",
+    48: "Fork",
+    49: "Knife",
+    50: "Spoon",
+    51: "Orange",
+    52: "Banana",
+    53: "Apple",
+    # Fill other missing IDs with 'Unknown' if needed
+}
 
-    return process_output(detection_boxes, detection_classes, detection_scores, image.shape)
+    
+    processed_image = draw_detections(
+        image, detection_boxes, detection_classes, detection_scores, class_names
+    )
+    
+    # Convert the image to JPEG format before sending the response
+    _, encoded_image = cv2.imencode('.jpg', processed_image)
+
+    return Response(content=encoded_image.tobytes(), media_type='image/jpeg')
+    # return process_output(detection_boxes, detection_classes, detection_scores, image.shape)
 
 def process_output(boxes, classes, scores, image_shape):
     H, W = image_shape[0], image_shape[1]
