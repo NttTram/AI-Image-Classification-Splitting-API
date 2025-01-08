@@ -15,7 +15,7 @@ infer = model.signatures['serving_default']
 image = cv2.imread('/app/data/images/fruits.jpg')
 
 # Convert image to RGB
-image_rgb = cv2.ccvtColor(image, cv2.COLOR_BGR2RGB)
+image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 # Resize and expand dimensions to fit the model input
 image_resize = cv2.resize(image_rgb, (320,320))

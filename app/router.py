@@ -178,8 +178,8 @@ async def detect_image(file: UploadFile = File(...)):
     boxes = []
     for box in detection_boxes:
         ymin, xmin, ymax, xmax = box
-        x_min, x_max = int(xmin * image.shape[1]), int(xmax * image.shape[1])
-        y_min, y_max = int(ymin * image.shape[0]), int(ymax * image.shape[0])
+        x_min, x_max = int(xmin * image.shape[1] - 40), int(xmax * image.shape[1] + 40)
+        y_min, y_max = int(ymin * image.shape[0] - 40), int(ymax * image.shape[0] + 40)
         boxes.append([x_min, y_min, x_max, y_max])
     
     
