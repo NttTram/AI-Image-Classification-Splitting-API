@@ -1,24 +1,17 @@
-from fastapi import APIRouter, UploadFile, File, Response
-import uuid
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, UploadFile, File
 import os
 import tensorflow as tf
 import numpy as np
 import cv2
-import tempfile
-import shutil
 router = APIRouter()
 
 
 # Load the pre-trained model
 model_dir = '/app/data/modelset/ssd_mobilenet_v2_320x320_coco17_tpu-8/saved_model'
 print("Loading model from:", model_dir)
-print("Is path correct?", os.path.exists(model_dir))
 
 model = tf.saved_model.load(model_dir)
 
-# Temporary directory to store detected imgs
-# Ensure base image directory exists
 img_dir = '/app/data/img/'
 # Ensure the base directory exists
 if not os.path.exists(img_dir):
@@ -27,8 +20,6 @@ if not os.path.exists(img_dir):
 else:
     print(f"Base image directory already exists at: {img_dir}")
 
-
-    
 
 class_names = {
     1: "Person",
@@ -123,7 +114,6 @@ class_names = {
     90: "Toothbrush"
 }
 
-
 def non_max_suppression(boxes, scores, threshold=0.35):
     if len(boxes) == 0:
         return []
@@ -131,18 +121,6 @@ def non_max_suppression(boxes, scores, threshold=0.35):
     scores = np.array(scores)
     indices = cv2.dnn.NMSBoxes(boxes.tolist(), scores.tolist(), score_threshold=0.3, nms_threshold=threshold)
     return indices.flatten()
-
-
-# def draw_detections(image, boxes, classes, scores, class_names, threshold=0.35):
-#     for i, score in enumerate(scores):
-#         if score >= threshold:  # Ensure we are only drawing detections that meet the confidence threshold
-#             x_min, y_min, x_max, y_max = boxes[i]
-#             class_id = classes[i]
-#             label = class_names.get(class_id, f'Unlabeled (ID {class_id})')
-#             cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (255, 0, 0), 2)
-#             cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-#     return image
-
 
 
 @router.post("/detect/")
@@ -155,11 +133,6 @@ async def detect_image(file: UploadFile = File(...)):
     img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     resized_img = cv2.resize(img, (320, 320))
     input_tensor = tf.convert_to_tensor([resized_img], dtype=tf.uint8)
-    
-    
-    # print(model.signatures['serving_default'].inputs)
-    # print("Shape of input tensor:", input_tensor.shape)
-    # print("Data type of input tensor:", input_tensor.dtype)
 
     # Inference
     infer = model.signatures['serving_default']
@@ -167,12 +140,10 @@ async def detect_image(file: UploadFile = File(...)):
     # Run detections
     outputs = infer(input_tensor)
    
-    
     # Extracting outputs
     detection_boxes = outputs['detection_boxes'].numpy()[0]   # [1, num_detections, 4]
     detection_classes = outputs['detection_classes'].numpy()[0].astype(int)  # [1, num_detections]
     detection_scores = outputs['detection_scores'].numpy()[0]  # [1, num_detections]
-    
     
     # Convert detection boxes from relative coordinates to absolute coordinates
     boxes = []
@@ -183,11 +154,8 @@ async def detect_image(file: UploadFile = File(...)):
         boxes.append([x_min, y_min, x_max, y_max])
     
     
-    
-    
     # Apply non-max suppression
     indices = non_max_suppression(boxes, detection_scores)
-    
     
     # Keep track of class name to handle duplicates
     class_count = {}
@@ -201,15 +169,7 @@ async def detect_image(file: UploadFile = File(...)):
         
         filename = f"{class_name}_{class_count[class_name]}.jpg"
         file_path = os.path.join(img_dir, filename)
-        
-        
-        # # Crop, resize, and save each detected object
-        # x_min, y_min, x_max, y_max = boxes[i]
-        # cropped_image = image[y_min:y_max, x_min:x_max]
-        # resized_cropped_image = cv2.resize(cropped_image, (360, 360))
-        # _, encoded_image = cv2.imencode('.jpg', resized_cropped_image)
-        # with open(file_path, 'wb') as file:
-        #     file.write(encoded_image)
+
         try:
             # Crop and save each detected object
             x_min, y_min, x_max, y_max = (int(detection_boxes[i][1] * image.shape[1]),
@@ -226,22 +186,5 @@ async def detect_image(file: UploadFile = File(...)):
             
         except Exception as e:
             print(f"Error saving image {filename}: {str(e)}")
-        
-    # filtered_boxes = [boxes[i] for i in indices]
-    # filtered_classes = [detection_classes[i] for i in indices]
-    # filtered_scores = [detection_scores[i] for i in indices]
-    
-    # # Draw detections
-    # processed_image = draw_detections(image, filtered_boxes, filtered_classes, filtered_scores, class_names)
-    
-    
-    # # Convert the image to JPEG format before sending the response
-    # _, encoded_image = cv2.imencode('.jpg', processed_image)
-
-    # return Response(content=encoded_image.tobytes(), media_type='image/jpeg')
+ 
     return {"message": "Image detection completed", "files_saved_to: ": img_dir}
-
-
-# def clean_temp_dir():
-#     shutil.rmtree(temp_dir)
-#     print("Temporary files deleted")
