@@ -1,9 +1,10 @@
 from fastapi import APIRouter, UploadFile, File
+from fastapi import HTTPException
 import os
 import tensorflow as tf
 import numpy as np
 import cv2
-router = APIRouter()
+router = APIRouter(prefix="/v1")
 
 
 # Load the pre-trained model
@@ -124,67 +125,71 @@ def non_max_suppression(boxes, scores, threshold=0.35):
 
 
 @router.post("/detect/")
-async def detect_image(file: UploadFile = File(...)):
-    contents = await file.read()
-    nparr = np.fromstring(contents, np.uint8)
-    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+async def detect_object(file: UploadFile = File(...)):
+    try: 
+        
+        contents = await file.read()
+        nparr = np.fromstring(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     
-    # Prepare the image for the model
-    img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    resized_img = cv2.resize(img, (320, 320))
-    input_tensor = tf.convert_to_tensor([resized_img], dtype=tf.uint8)
+        # Prepare the image for the model
+        img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        resized_img = cv2.resize(img, (320, 320))
+        input_tensor = tf.convert_to_tensor([resized_img], dtype=tf.uint8)
 
-    # Inference
-    infer = model.signatures['serving_default']
+        # Inference
+        infer = model.signatures['serving_default']
     
-    # Run detections
-    outputs = infer(input_tensor)
+        # Run detections
+        outputs = infer(input_tensor)
    
-    # Extracting outputs
-    detection_boxes = outputs['detection_boxes'].numpy()[0]   # [1, num_detections, 4]
-    detection_classes = outputs['detection_classes'].numpy()[0].astype(int)  # [1, num_detections]
-    detection_scores = outputs['detection_scores'].numpy()[0]  # [1, num_detections]
+        # Extracting outputs
+        detection_boxes = outputs['detection_boxes'].numpy()[0]   # [1, num_detections, 4]
+        detection_classes = outputs['detection_classes'].numpy()[0].astype(int)  # [1, num_detections]
+        detection_scores = outputs['detection_scores'].numpy()[0]  # [1, num_detections]
     
-    # Convert detection boxes from relative coordinates to absolute coordinates
-    boxes = []
-    for box in detection_boxes:
-        ymin, xmin, ymax, xmax = box
-        x_min, x_max = int(xmin * image.shape[1] - 40), int(xmax * image.shape[1] + 40)
-        y_min, y_max = int(ymin * image.shape[0] - 40), int(ymax * image.shape[0] + 40)
-        boxes.append([x_min, y_min, x_max, y_max])
+        # Convert detection boxes from relative coordinates to absolute coordinates
+        boxes = []
+        for box in detection_boxes:
+            ymin, xmin, ymax, xmax = box
+            x_min, x_max = int(xmin * image.shape[1] - 40), int(xmax * image.shape[1] + 40)
+            y_min, y_max = int(ymin * image.shape[0] - 40), int(ymax * image.shape[0] + 40)
+            boxes.append([x_min, y_min, x_max, y_max])
     
     
-    # Apply non-max suppression
-    indices = non_max_suppression(boxes, detection_scores)
+        # Apply non-max suppression
+        indices = non_max_suppression(boxes, detection_scores)
     
-    # Keep track of class name to handle duplicates
-    class_count = {}
+        # Keep track of class name to handle duplicates
+        class_count = {}
     
-    for i in indices:
-        class_id = detection_classes[i]
-        class_name = class_names.get(class_id, f"Unlabeled_{class_id}")
-        
-        # Increment count to handle duplicates
-        class_count[class_name] = class_count.get(class_name, 0) + 1
-        
-        filename = f"{class_name}_{class_count[class_name]}.jpg"
-        file_path = os.path.join(img_dir, filename)
+        for i in indices:
+            class_id = detection_classes[i]
+            class_name = class_names.get(class_id, f"Unlabeled_{class_id}")
+            
+            # Increment count to handle duplicates
+            class_count[class_name] = class_count.get(class_name, 0) + 1
+            
+            filename = f"{class_name}_{class_count[class_name]}.jpg"
+            file_path = os.path.join(img_dir, filename)
 
-        try:
-            # Crop and save each detected object
-            x_min, y_min, x_max, y_max = (int(detection_boxes[i][1] * image.shape[1]),
-                                            int(detection_boxes[i][0] * image.shape[0]),
-                                            int(detection_boxes[i][3] * image.shape[1]),
-                                            int(detection_boxes[i][2] * image.shape[0]))
-            cropped_image = image[y_min:y_max, x_min:x_max]
-            resized_cropped_image = cv2.resize(cropped_image, (360, 360))
-            success = cv2.imwrite(file_path, resized_cropped_image)
-            print("Image save successful: ", success)
-            
-            if not success:
-                raise Exception("Could not write image to file system.")
-            
-        except Exception as e:
-            print(f"Error saving image {filename}: {str(e)}")
- 
+            try:
+                # Crop and save each detected object
+                x_min, y_min, x_max, y_max = (int(detection_boxes[i][1] * image.shape[1]),
+                                                int(detection_boxes[i][0] * image.shape[0]),
+                                                int(detection_boxes[i][3] * image.shape[1]),
+                                                int(detection_boxes[i][2] * image.shape[0]))
+                cropped_image = image[y_min:y_max, x_min:x_max]
+                resized_cropped_image = cv2.resize(cropped_image, (360, 360))
+                success = cv2.imwrite(file_path, resized_cropped_image)
+                print("Image save successful: ", success)
+                
+                if not success:
+                    raise Exception("Could not write image to file system.")
+                
+            except Exception as e:
+                print(f"Error saving image {filename}: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
     return {"message": "Image detection completed", "files_saved_to: ": img_dir}
