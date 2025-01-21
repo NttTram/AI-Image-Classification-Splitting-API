@@ -56,11 +56,16 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Testing with Postman
 1. Make sure Docker is running.
-2. open Postman and configure a new POST request to `http://localhost:8000/detect/`
+2. open Postman and configure a new POST request to `http://localhost:8000/v1/upload`
 3. Under the Body tab, choose `form-data`
 4. In the key field, set the type to `File` and upload an image file
 5. Send the request and aobserve the response
 6. Open Docker desktop to Files, under `app/data/img` are where the results are stored
+
+### Testing with pytest
+
+    ``` bash
+    pytest
 
 
 ## Authors
