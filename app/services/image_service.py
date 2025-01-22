@@ -11,7 +11,7 @@ if not os.path.exists(img_dir):
 
 ## upload_image():
 ## 1. Upload a file and save it to img_dir [Done]
-## 2. Make sure the file uploaded is image format compatible [Done]
+## 2. Make sure the file uploaded is in correct format compatible [Done]
 def upload_image(file: UploadFile):
     try:
         
@@ -34,10 +34,6 @@ def upload_image(file: UploadFile):
         file_location = f"{img_dir}/{file_name}"
         if not os.path.exists(file_location):
             os.makedirs(file_location)
-        
-        # ## Write in binary mode with read/write permissions
-        # with open(file_location, "wb+") as file_object:
-        #     file_object.write(file.file.read())
             
         # Create an instance of ImageModel to return
         image_data = ImageModel(name=file.filename, description="Uploaded image")
@@ -60,30 +56,22 @@ def upload_file(file: UploadFile):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
     
-## list_processed_image():
-## 1. Show all the images from the latest image uploaded through the POST /upload/
-## 2. If no images then return empty + message to ask user to upload images through POST /upload, 'jpeg'/
-# def get_latest_uploaded_images():
-#     images = list_images()
-#     # if returned type if dictionary, it means there are no images
-#     if isinstance(images, dict):
-#         return images
-#     # Assuming 
-#     latest_images = sorted(images, key=lambda x: os.path.getmtime(x, reverse=True))
-    
-#     return latest_images
+
+# List specific images from uploaded images based on their filename/label
+## 1. Given an image filename, return all images segmented in that image folder
+## 2. If label/filename doesn't exist, return message to ask user to upload images through POST /v1/upload/ first
 
 
-## list_images():
+# list_images:
 ## 1. List all the images stored in app/data/img [Done]
 ## 2. If empty prompt user to start uploading images through POST /upload/ [Done]
 def list_images():
 
     images = []
     for root, dirs, files in os.walk(img_dir):
-        for file in files:
+        for file in  files:
             if file.lower().endswith(img_formats):
                 images.append(os.path.join(root, file))
     if not images:
-        return {"message" : "No images found. Please upload image through POST /v1/upload/"}
+        return {"message" : "No images found. Please upload image through POST /upload/"}
     return images
