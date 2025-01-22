@@ -1,5 +1,5 @@
 import os
-from models.image_model import ImageModel
+from app.models.image_model import ImageModel
 from fastapi import UploadFile, HTTPException, File
 
 

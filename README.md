@@ -62,10 +62,14 @@ These instructions will get you a copy of the project up and running on your loc
 5. Send the request and aobserve the response
 6. Open Docker desktop to Files, under `app/data/img` are where the results are stored
 
-### Testing with pytest
+### Testing tools
 
+#### Installing testing tools for unit tests with Pytest:
+
+1. Install pytest for testing and httpx for integration testing
     ``` bash
-    pytest
+    pip install pytest httpx fastapi pytest-asyncio
+
 
 
 ## Authors

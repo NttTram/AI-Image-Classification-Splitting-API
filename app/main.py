@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 # from router import router
-from routers.image_router import router as image_router
+from app.routers.image_router import router as image_router
 
 
 ## Setup FastAPI instance

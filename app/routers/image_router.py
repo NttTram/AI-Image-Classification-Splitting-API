@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile
-from services.image_service import list_images, upload_image
+from app.services.image_service import list_images, upload_image
 
 router = APIRouter()
 
