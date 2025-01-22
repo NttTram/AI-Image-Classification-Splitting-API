@@ -81,9 +81,9 @@ def list_images():
 
     images = []
     for root, dirs, files in os.walk(img_dir):
-        for file in  files:
+        for file in files:
             if file.lower().endswith(img_formats):
                 images.append(os.path.join(root, file))
     if not images:
-        return {"message" : "No images found. Please upload image through POST /upload/"}
+        return {"message" : "No images found. Please upload image through POST /v1/upload/"}
     return images
